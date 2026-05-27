@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo Interactivo: Distancia entre Rectas en el Plano</title>
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --accent-blue: #3182ce;
+            --accent-red: #e53e3e;
+            --accent-green: #38a169;
+            --bg-light: #f7fafc;
+            --text-main: #2d3748;
+            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+            line-height: 1.6;
+        }
+
+        .dashboard {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard { grid-template-columns: 1fr; }
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #1a365d 0%, #2a4365 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+        }
+
+        header h1 { margin: 0 0 8px 0; font-size: 1.8rem; font-weight: 700; letter-spacing: -0.5px; }
+        header p { margin: 0; opacity: 0.9; font-size: 1rem; }
+
+        .panel-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card h2 { margin-top: 0; margin-bottom: 16px; font-size: 1.25rem; color: var(--primary-color); border-bottom: 2px solid #edf2f7; padding-bottom: 8px; }
+
+        .recta-config {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            background: #f8fafc;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .recta-config.r2 { border-left-color: var(--accent-red); }
+        .recta-config h3 { margin: 0 0 12px 0; font-size: 1rem; }
+
+        .control-row {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .control-row label { font-family: monospace; font-weight: bold; min-width: 45px; }
+        
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-blue);
+            cursor: pointer;
+        }
+        .recta-config.r2 input[type="range"] { accent-color: var(--accent-red); }
+
+        .val-badge {
+            background: #edf2f7;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .display-resultado {
+            transition: all 0.3s ease;
+            border-left: 4px solid #cbd5e0;
+        }
+
+        .math-box {
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            background: #1a202c;
+            color: #edf2f7;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            margin-top: 12px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .panel-grafico {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            position: sticky;
+            top: 24px;
+        }
+
+        canvas {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #e2e8f0;
+            max-width: 100%;
+            cursor: crosshair;
+        }
+
+        .instrucciones-uso {
+            margin-top: 16px;
+            font-size: 0.9rem;
+            color: #718096;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <header>
+        <h1>Laboratorio de Geometría Interactiva</h1>
+        <p>Explorador dinámico para el análisis de posiciones relativas y distancias entre rectas</p>
+    </header>
+
+    <div class="panel-controls">
+        <div class="card">
+            <h2>Modificar Coordenadas</h2>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: -10px; margin-bottom: 20px;">Desliza los controles para alterar la posición de los puntos de control en el plano cartesiano.</p>
+            
+            <div class="recta-config r1">
+                <h3 style="color: var(--accent-blue);">Recta 1 (Parámetros p1 y p2)</h3>
+                <div class="control-row">
+                    <label>p1.x:</label>
+                    <input type="range" id="p1x" min="-8" max="8" step="1" value="-3" oninput="actualizar()">
+                    <span class="val-badge" id="v_p1x">-3</span>
+                </div>
+                <div class="control-row">
+                    <label>p1.y:</label>
+                    <input type="range" id="p1y" min="-8" max="8" step="1" value="-2" oninput="actualizar()">
+                    <span class="val-badge" id="v_p1y">-2</span>
+                </div>
+                <div class="control-row" style="margin-top: 15px;">
+                    <label>p2.x:</label>
+                    <input type="range" id="p2x" min="-8" max="8" step="1" value="3" oninput="actualizar()">
+                    <span class="val-badge" id="v_p2x">3</span>
+                </div>
+                <div class="control-row">
+                    <label>p2.y:</label>
+                    <input type="range" id="p2y" min="-8" max="8" step="1" value="2" oninput="actualizar()">
+                    <span class="val-badge" id="v_p2y">2</span>
+                </div>
+            </div>
+
+            <div class="recta-config r2">
+                <h3 style="color: var(--accent-red);">Recta 2 (Parámetros q1 y q2)</h3>
+                <div class="control-row">
+                    <label>q1.x:</label>
+                    <input type="range" id="q1x" min="-8" max="8" step="1" value="-5" oninput="actualizar()">
+                    <span class="val-badge" id="v_q1x">-5</span>
+                </div>
+                <div class="control-row">
+                    <label>q1.y:</label>
+                    <input type="range" id="q1y" min="-8" max="8" step="1" value="4" oninput="actualizar()">
+                    <span class="val-badge" id="v_q1y">4</span>
+                </div>
+                <div class="control-row" style="margin-top: 15px;">
+                    <label>q2.x:</label>
+                    <input type="range" id="q2x" min="-8" max="8" step="1" value="3" oninput="actualizar()">
+                    <span class="val-badge" id="v_q2x">3</span>
+                </div>
+                <div class="control-row">
+                    <label>q2.y:</label>
+                    <input type="range" id="q2y" min="-8" max="8" step="1" value="-2" oninput="actualizar()">
+                    <span class="val-badge" id="v_q2y">-2</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card display-resultado" id="card-status">
+            <h2 id="status-titulo" style="margin-bottom: 8px;">Estado del Sistema</h2>
+            <p id="status-descripcion" style="font-size: 0.95rem; margin: 0 0 12px 0;"></p>
+            
+            <h3 style="font-size: 0.9rem; margin: 16px 0 6px 0; color: #4a5568;">Variables de Backend Algebraico:</h3>
+            <div class="math-box" id="consola-algebraica"></div>
+        </div>
+    </div>
+
+    <div class="panel-grafico">
+        <canvas id="planoCartesiano" width="600" height="600"></canvas>
+        <div class="instrucciones-uso">
+            💡 <strong>Sugerencia de visualización:</strong> Modifica los valores para forzar un determinante igual a cero <span style="font-family:monospace;">(det = 0)</span> y observa cómo cambia el cálculo analítico del espacio.
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('planoCartesiano');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+    const Scale = 30; // Píxeles por unidad en el plano cartesiano
+
+    function transX(x) { return (W / 2) + x * Scale; }
+    function transY(y) { return (H / 2) - y * Scale; }
+
+    function dibujarEstructuraBase() {
+        ctx.clearRect(0, 0, W, H);
+        
+        // Renderizado de cuadrícula fina
+        ctx.strokeStyle = '#f1f5f9';
+        ctx.lineWidth = 1;
+        for(let i = -15; i <= 15; i++) {
+            ctx.beginPath(); ctx.moveTo(transX(i), 0); ctx.lineTo(transX(i), H); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, transY(i)); ctx.lineTo(W, transY(i)); ctx.stroke();
+        }
+
+        // Ejes ortogonales principales
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
+
+        // Numeración básica de ejes
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px monospace';
+        for(let i = -10; i <= 10; i += 2) {
+            if(i !== 0) {
+                ctx.fillText(i, transX(i) - 5, (H / 2) + 15);
+                ctx.fillText(i, (W / 2) + 8, transY(i) + 4);
+            }
+        }
+    }
+
+    function graficarLineaInfinita(x1, y1, x2, y2, color) {
+        const vx = x2 - x1;
+        const vy = y2 - y1;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(transX(x1 - vx * 5), transY(y1 - vy * 5));
+        ctx.lineTo(transX(x2 + vx * 5), transY(y2 + vy * 5));
+        ctx.stroke();
+    }
+
+    function graficarMarcador(x, y, color, r = 5) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(transX(x), transY(y), r, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+
+    function actualizar() {
+        dibujarEstructuraBase();
+
+        // Carga y mapeo de datos de entrada
+        const p1 = { x: parseInt(document.getElementById('p1x').value), y: parseInt(document.getElementById('p1y').value) };
+        const p2 = { x: parseInt(document.getElementById('p2x').value), y: parseInt(document.getElementById('p2y').value) };
+        const q1 = { x: parseInt(document.getElementById('q1x').value), y: parseInt(document.getElementById('q1y').value) };
+        const q2 = { x: parseInt(document.getElementById('q2x').value), y: parseInt(document.getElementById('q2y').value) };
+
+        // Sincronizar indicadores de texto del panel
+        document.getElementById('v_p1x').innerText = p1.x; document.getElementById('v_p1y').innerText = p1.y;
+        document.getElementById('v_p2x').innerText = p2.x; document.getElementById('v_p2y').innerText = p2.y;
+        document.getElementById('v_q1x').innerText = q1.x; document.getElementById('v_q1y').innerText = q1.y;
+        document.getElementById('v_q2x').innerText = q2.x; document.getElementById('v_q2y').innerText = q2.y;
+
+        // Validar que los puntos no colapsen para evitar divisiones sobre vectores nulos
+        if((p1.x === p2.x && p1.y === p2.y) || (q1.x === q2.x && q1.y === q2.y)) {
+            document.getElementById('status-titulo').innerText = "Error geométrico";
+            document.getElementById('status-descripcion').innerText = "Los puntos asignados a una misma recta no pueden ser idénticos porque imposibilitan trazar una dirección vectorial válida.";
+            return;
+        }
+
+        // Vectores directores y normales
+        const v1 = { x: p2.x - p1.x, y: p2.y - p1.y };
+        const v2 = { x: q2.x - q1.x, y: q2.y - q1.y };
+        const n1 = { x: -v1.y, y: v1.x };
+
+        // Determinante estructural
+        const det = v1.x * v2.y - v1.y * v2.x;
+
+        // Renderizado base de rectas y nodos
+        graficarLineaInfinita(p1.x, p1.y, p2.x, p2.y, '#3182ce');
+        graficarLineaInfinita(q1.x, q1.y, q2.x, q2.y, '#e53e3e');
+        graficarMarcador(p1.x, p1.y, '#1a365d', 4); graficarMarcador(p2.x, p2.y, '#1a365d', 4);
+        graficarMarcador(q1.x, q1.y, '#742a2a', 4); graficarMarcador(q2.x, q2.y, '#742a2a', 4);
+
+        const card = document.getElementById('card-status');
+        const tit = document.getElementById('status-titulo');
+        const desc = document.getElementById('status-descripcion');
+        const cons = document.getElementById('consola-algebraica');
+
+        let logMatematico = `Vector v1 (dir) = [${v1.x}, ${v1.y}]\nVector v2 (dir) = [${v2.x}, ${v2.y}]\nVector n1 (norm)= [${n1.x}, ${n1.y}]\n`;
+        logMatematico += `Determinante   = v1.x*v2.y - v1.y*v2.x = ${det}\n`;
+
+        if (det !== 0) {
+            // CASO 1: RECTAS SECANTES / NO PARALELAS
+            const t_int = ((q1.x - p1.x) * v2.y - v2.x * (q1.y - p1.y)) / det;
+            const intX = p1.x + t_int * v1.x;
+            const intY = p1.y + t_int * v1.y;
+
+            graficarMarcador(intX, intY, '#38a169', 7);
+
+            card.style.borderLeftColor = "var(--accent-green)";
+            tit.innerText = "Caso 1: Rectas Secantes (No Paralelas)";
+            tit.style.color = "var(--accent-green)";
+            desc.innerHTML = `El determinante es <b>${det} ≠ 0</b>. Esto prueba analíticamente que las trayectorias vectoriales no son paralelas y se cruzan. La distancia mínima entre ellas es <b>0</b>.`;
+            
+            logMatematico += `Parámetro t    = ${t_int.toFixed(3)}\nPunto Cruce    = P(${intX.toFixed(2)}, ${intY.toFixed(2)})\nDistancia (d)  = 0`;
+        } else {
+            // CASOS DE PARALELISMO
+            const D1 = n1.x * p1.x + n1.y * p1.y;
+            const D2 = n1.x * q1.x + n1.y * q1.y;
+            const norm_n = Math.sqrt(n1.x * n1.x + n1.y * n1.y);
+            const dist = Math.abs(D1 - D2) / norm_n;
+
+            logMatematico += `Parámetro D1   = n1 • p1 = ${D1}\nParámetro D2   = n1 • q1 = ${D2}\nNorma ||n1||   = ${norm_n.toFixed(3)}\n`;
+
+            if (D1 === D2) {
+                // CASO 2: COINCIDENTES
+                card.style.borderLeftColor = "#4a5568";
+                tit.innerText = "Caso 2: Rectas Coincidentes";
+                tit.style.color = "#4a5568";
+                desc.innerHTML = `El determinante es <b>0</b> y <b>D1 = D2</b>. Las rectas comparten la misma dirección y pasan por los mismos puntos espaciales, tratándose de la misma recta. Distancia = <b>0</b>.`;
+                logMatematico += `Distancia (d)  = 0`;
+            } else {
+                // CASO 3: PARALELAS SEPARADAS
+                const t_proj = (D2 - D1) / (norm_n * norm_n);
+                const p_cl = { x: p1.x + t_proj * n1.x, y: p1.y + t_proj * n1.y };
+
+                // Trazar línea de distancia ortogonal (segmentada en color verde)
+                ctx.strokeStyle = '#38a169';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath(); ctx.moveTo(transX(p1.x), transY(p1.y)); ctx.lineTo(transX(p_cl.x), transY(p_cl.y)); ctx.stroke();
+                ctx.setLineDash([]);
+                graficarMarcador(p_cl.x, p_cl.y, '#38a169', 4);
+
+                card.style.borderLeftColor = "var(--accent-blue)";
+                tit.innerText = "Caso 3: Rectas Paralelas Separadas";
+                tit.style.color = "var(--accent-blue)";
+                desc.innerHTML = `El determinante es <b>0</b> pero <b>D1 ≠ D2</b>. Viajan en la misma dirección sin cruzarse nunca. La distancia mínima entre ellas está dada por la proyección de su vector normal.`;
+                logMatematico += `Distancia (d)  = |${D1} - ${D2}| / ${norm_n.toFixed(3)} = ${dist.toFixed(3)}`;
+            }
+        }
+        cons.innerText = logMatematico;
+    }
+
+    window.onload = actualizar;
+</script>
+
+</body>
+</html>
